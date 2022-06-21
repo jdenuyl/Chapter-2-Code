@@ -25,7 +25,7 @@ setwd("/Users/jdenuyl/Desktop/Chapter-2-Code")
 
 
 # Read in data
-kelp = read.csv("kelp.csv.csv")
+kelp = read.csv("USSR2021.csv")
 
 # Convert -Inf to NA
 kelp$max_Max.OV[which(kelp$max_Max.OV == -Inf)] = NA
@@ -66,12 +66,25 @@ summary(kelp_model.sem, standardize = TRUE)
 # Get R2 for models
 inspect(kelp_model.sem, "rsquare")
 
-####### 
+####### Using USSR2021 piecewise ####
+
+setwd("C:/Users/locdenuylji/Desktop/Chapter-2-Code")
+setwd("/Users/jdenuyl/Desktop/Chapter-2-Code")
+
+
+# Read in data
+dat1 = read.csv("USSR2021.csv")
+
+#
+vars = c("X", "Treatment", "Date", "Plot", "Month", "Day", "Week", "HHMMSS", 
+         "Hour.EST", "Hour", "Minute", "FTime", "Mode", "Smpls", "C2avg", KEEP GOING WITH THESE)
+dat2 = dat1[, vars]
+dat3 = na.omit(dat2)
 
 # Now fit piecewise model with random effect
 
 # Create component models and store in list
-kelp_pSEM_randomList = list(
+pSEM_randomList = list(
   
   # Predicting spring kelp canopy
   spring_canopy_150 = lme(spring_canopy_150 ~ max_Max.OV * prev.kelp + habitat, random = ~ 1 | SITE, data = kelp),
@@ -104,6 +117,13 @@ summary.kelp$Cstat
 summary.kelp$coefficients
 
 ####### 
+
+setwd("C:/Users/locdenuylji/Desktop/Chapter-2-Code")
+setwd("/Users/jdenuyl/Desktop/Chapter-2-Code")
+
+
+# Read in data
+kelp = read.csv("USSR2021.csv")
 
 # Fit piecewise SEM with random AND autocorrelation structures
 kelp_pSEM_CAR1List = list(
