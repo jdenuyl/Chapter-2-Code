@@ -5,20 +5,27 @@
 
 ####### 
 
+install.packages('ape')
+install.packages('caper')
+install.packages('lavaan')
+install.packages("piecewiseSEM")
+
 # Load required libraries
 library(ape) #Version 3.3
 library(caper) # Vresion 0.5.2
 library(nlme) # Version 3.1.122
 library(lavaan) # Version 0.5.19
-
-# Load piecewiseSEM from CRAN
-# install.packages("piecewiseSEM")
 library(piecewiseSEM) # Version 1.0.0
+library(sem.fit)
 
 ####### EXAMPLE 1: KELP FOREST (BYRNES ET AL. 2011) ####### 
 
+setwd("C:/Users/locdenuylji/Desktop/Chapter-2-Code")
+setwd("/Users/jdenuyl/Desktop/Chapter-2-Code")
+
+
 # Read in data
-kelp = read.csv("kelp.csv")
+kelp = read.csv("kelp.csv.csv")
 
 # Convert -Inf to NA
 kelp$max_Max.OV[which(kelp$max_Max.OV == -Inf)] = NA
@@ -80,17 +87,21 @@ kelp_pSEM_randomList = list(
   
 )
 
-# Run goodness-of-fit tests
-sem.fit(kelp_pSEM_randomList, kelp)
+# I had to edit the following as it had been changed ... https://cran.r-project.org/web/packages/piecewiseSEM/vignettes/piecewiseSEM.html
+kelp_psem <- as.psem(kelp_pSEM_randomList)
+summary.kelp<-summary(kelp_psem)
+#Summary contains R2 value
+summary.kelp
+AIC(kelp_psem)
 
-# Evaluate path significance using unstandardized coefficients
-sem.coefs(kelp_pSEM_randomList, kelp, standardize = "none")
+#See d-sep tests
+summary.kelp$dTable
 
-# Obtain standardized regression coefficients
-sem.coefs(kelp_pSEM_randomList, kelp, standardize = "scale")
+#Find Fisher’s C statistic, and the results from the χ2 test
+summary.kelp$Cstat
 
-# Explore individual model fits
-sem.model.fits(kelp_pSEM_randomList)
+#Path coefficients and the standardized estimates
+summary.kelp$coefficients
 
 ####### 
 
@@ -115,17 +126,21 @@ kelp_pSEM_CAR1List = list(
   
 )
 
-# Run goodness-of-fit tests
-sem.fit(kelp_pSEM_CAR1List, kelp)
+# I had to edit, same as above
+kelp_psem.car <- as.psem(kelp_pSEM_CAR1List)
+summary.kelp.car<-summary(kelp_psem.car)
+#Summary contains R2 value
+summary.kelp.car
+AIC(kelp_psem.car)
 
-# Evaluate path significance using unstandardized coefficients
-sem.coefs(kelp_pSEM_CAR1List, kelp, standardize = "none")
+#See d-sep tests
+summary.kelp.car$dTable
 
-# Obtain standardized regression coefficients
-sem.coefs(kelp_pSEM_CAR1List, kelp, standardize = "scale")
+#Find Fisher’s C statistic, and the results from the χ2 test
+summary.kelp.car$Cstat
 
-# Explore individual model fits
-sem.model.fits(kelp_pSEM_CAR1List)
+#Path coefficients and the standardized estimates
+summary.kelp.car$coefficients
 
 ####### 
 
@@ -171,101 +186,20 @@ kelp_richness_pSEM_randomList = list(
   
 )
 
-# Run goodness-of-fit tests
-sem.fit(kelp_richness_pSEM_randomList, kelp, corr.errors = 
-          c("mobile_richness ~~ algae_richness",
-            "mobile_richness ~~ sessile_invert_richness",
-            "sessile_invert_richness ~~ algae_richness"
-          )
-)
+# I had to edit, same as above
+kelp_psem.rich <- as.psem(kelp_richness_pSEM_randomList)
+summary.kelp.rich<-summary(kelp_psem.rich)
+#Summary contains R2 value
+summary.kelp.rich
+AIC(kelp_psem.rich)
 
-# Return coefficients
-sem.coefs(kelp_richness_pSEM_randomList, kelp, standardize = "scale", 
-          corr.errors = 
-            c("mobile_richness ~~ algae_richness",
-              "mobile_richness ~~ sessile_invert_richness",
-              "sessile_invert_richness ~~ algae_richness"
-            )
-)
+#See d-sep tests
+summary.kelp.rich$dTable
 
+#Find Fisher’s C statistic, and the results from the χ2 test
+summary.kelp.rich$Cstat
+
+#Path coefficients and the standardized estimates
+summary.kelp.rich$coefficients
 
 
-####### EXAMPLE 2: ECOLOGICAL SUCCESS OF EUSOCIAL SHRIMPS (DUFFY & MACDONALD 2010) ####### 
-
-# Read in data
-synalpheus = read.csv("synalpheus.csv")
-
-# Replace species name
-synalpheus$Species = as.character(synalpheus$Species)
-synalpheus[synalpheus$Species == "longsm", "Species"] = "longicarpus_small"
-
-# Construct structured equations
-synalpheus_model = '
-  Host.Range ~ Eusociality.index + Total.Mass.Female
-
-  Rubble.Abundance ~ Eusociality.index + Host.Range
-'
-# Fit SEM using lavaan
-synalpheus.sem = sem(synalpheus_model, synalpheus)
-
-# Explore summary output
-summary(synalpheus.sem, standardized = TRUE)
-
-inspect(synalpheus.sem, "rsquare")
-
-####### 
-
-# Repeat but include phylogenetic correlations
-
-# Import phylogenetic tree
-synalpheus.tree = read.tree("synalpheus_tree.txt")
-
-# Drop tips not found in the synalpheus dataset
-synalpheus.tree = drop.tip(synalpheus.tree, synalpheus.tree$tip.label[!synalpheus.tree$tip.label %in% unique(synalpheus$Species)])
-
-# Order data by tip order
-synalpheus = synalpheus[which(synalpheus$Species %in% synalpheus.tree$tip.label), ]
-rownames(synalpheus) = synalpheus$Species
-
-# Run model
-synalpheus_modelCorList = list(
-  
-  Host.Range = gls(Host.Range ~ Eusociality.index + Total.Mass.Female, correlation = corBrownian(0.5, synalpheus.tree), na.action = na.omit, synalpheus),
-  
-  Rubble.Abundance = gls(Rubble.Abundance ~ Eusociality.index + Host.Range, correlation = corBrownian(0.5, synalpheus.tree), na.action = na.omit, synalpheus)
-
-  )
-
-# Check fit
-sem.fit(synalpheus_modelCorList, synalpheus)
-
-# Obtain standardized regression coefficients
-sem.coefs(synalpheus_modelCorList, synalpheus, standardize = "scale")
-
-# Explore individual model fits
-sem.model.fits(synalpheus_modelCorList)
-
-#######
-
-# Repeat with pgls from 'caper' package
-
-# Merge Synalpheus data and tree
-synalpheus.merge = comparative.data(synalpheus.tree, synalpheus, names.col = "Species")
-
-# Run model
-synalpheus_modelPGLSList = list(
-  
-  Host.Range = pgls(Host.Range ~ Eusociality.index + Total.Mass.Female, synalpheus.merge),
-  
-  Rubble.Abundance = pgls(Rubble.Abundance ~ Eusociality.index + Host.Range, synalpheus.merge)
-  
-)
-
-# Check fit
-sem.fit(synalpheus_modelPGLSList, synalpheus.merge)
-
-# Obtain standardized regression coefficients
-sem.coefs(synalpheus_modelPGLSList, synalpheus.merge, standardize = "scale")
-
-# Explore individual model fits
-sem.model.fits(synalpheus_modelPGLSList)
